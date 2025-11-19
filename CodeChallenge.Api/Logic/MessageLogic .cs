@@ -8,8 +8,10 @@ public class MessageLogic : IMessageLogic
     private readonly IMessageRepository _repository;
     private readonly ILogger<MessageLogic> _logger;
 
-    private const int MaxTitleLength = 100;
-    private const int MaxContentLength = 500;
+    private const int MinTitleLength = 3;
+    private const int MaxTitleLength = 200;
+    private const int MinContentLength = 10;
+    private const int MaxContentLength = 1000;
 
     public MessageLogic(IMessageRepository repository, ILogger<MessageLogic> logger)
     {
@@ -86,7 +88,12 @@ public class MessageLogic : IMessageLogic
             return new NotFound($"Message with id '{id}' not found for organization '{organizationId}'.");
 
         if (!existing.IsActive)
-            return new Conflict("Cannot delete an inactive message.");
+        {
+            return new ValidationError(new Dictionary<string, string[]>
+        {
+            { "IsActive", new[] { "Message must be active in order to be deleted." } }
+        });
+        }
 
         var deleted = await _repository.DeleteAsync(organizationId, id);
 
@@ -125,10 +132,11 @@ public class MessageLogic : IMessageLogic
         }
         else
         {
-            if (request.Title.Length < 3)
-                AddError(nameof(request.Title), "Title must be at least 3 characters long.");
-            if (request.Title.Length > 200)
-                AddError(nameof(request.Title), "Title must not exceed 200 characters.");
+            var titleLen = request.Title.Length;
+            if (titleLen < MinTitleLength)
+                AddError(nameof(request.Title), $"Title must be at least {MinTitleLength} characters long.");
+            if (titleLen > MaxTitleLength)
+                AddError(nameof(request.Title), $"Title must not exceed {MaxTitleLength} characters.");
         }
 
         if (string.IsNullOrWhiteSpace(request.Content))
@@ -137,10 +145,11 @@ public class MessageLogic : IMessageLogic
         }
         else
         {
-            if (request.Content.Length < 10)
-                AddError(nameof(request.Content), "Content must be at least 10 characters long.");
-            if (request.Content.Length > 1000)
-                AddError(nameof(request.Content), "Content must not exceed 1000 characters.");
+            var contentLen = request.Content.Length;
+            if (contentLen < MinContentLength)
+                AddError(nameof(request.Content), $"Content must be at least {MinContentLength} characters long.");
+            if (contentLen > MaxContentLength)
+                AddError(nameof(request.Content), $"Content must not exceed {MaxContentLength} characters.");
         }
 
         return errors.ToDictionary(k => k.Key, k => k.Value.ToArray(), StringComparer.OrdinalIgnoreCase);

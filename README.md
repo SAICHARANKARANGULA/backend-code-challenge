@@ -36,7 +36,15 @@ Start the test by forking this repository, and complete the following tasks:
 
 **Question 1:** Describe your implementation approach and the key decisions you made.
 
+**Ans:** 
+
+For Task 1, I focused on building a clean and straightforward REST API using the existing IMessageRepository. Each controller method maps directly to a CRUD operation, returning the correct HTTP status codes (200, 201, 204, 404). The controller contains only request handling and repository calls—no business logic—so the code is easy to understand and prepares the project for later tasks. I also ensured proper route structure and consistent responses for all endpoints.
+
 **Question 2:** What would you improve or change if you had more time?
+
+**Ans:** 
+
+If I had more time, I would improve the structure by introducing a dedicated business logic layer earlier, so validation and business rules don’t sit in the controller. I would also add response DTOs instead of returning domain models directly, improve error responses using standardized formats like ProblemDetails, and add logging and basic tests to make the API more production-ready.
 
 commit the code as task-1
 
@@ -56,7 +64,15 @@ commit the code as task-1
 
 **Question 3:** How did you approach the validation requirements and why?
 
+**Ans:** 
+
+I moved all validation rules into the MessageLogic class so the controller stays clean and focused on HTTP concerns. The logic layer checks the title and content length, ensures the title is unique per organization, and enforces that only active messages can be updated or deleted. Keeping validation in one place makes the rules easier to maintain, easier to test, and ensures consistent behavior across the entire application.
+
 **Question 4:** What changes would you make to this implementation for a production environment?
+
+**Ans:** 
+
+For a real production system, I would enforce the title uniqueness rule at the database level, use a real database instead of the in-memory repository, and add more robust error handling with standardized responses. I’d also introduce FluentValidation for cleaner rule definitions, add authentication/authorization, and include logging, metrics, and better observability. Finally, I’d add integration tests and concurrency controls to handle real-world usage safely.
 
 commit the code as task-2
 
@@ -76,6 +92,13 @@ commit the code as task-2
 
 **Question 5:** Explain your testing strategy and the tools you chose.
 
+**Ans:** 
+
+We focused tests on the business logic layer (MessageLogic) to keep them fast, deterministic, and easy to reason about. Each unit test isolates MessageLogic by mocking IMessageRepository (using Moq) so we only verify domain rules and repository interactions — no real database or HTTP stack is used. Tests are written with xUnit for structure and FluentAssertions for clear, expressive assertions; this combination makes failures easy to read and helps keep tests maintainable. Overall the goal was to cover happy paths and important edge cases (validation, conflicts, not-found) while keeping the test suite quick to run.
+
 **Question 6:** What other scenarios would you test in a real-world application?
+
+**Ans:** 
+Beyond the unit tests, I’d add integration tests that run the full stack (API → logic → real database) to validate DB constraints and transaction behavior (e.g., unique index enforcement and concurrency). I’d also add tests for auth/authorization (ensure org-level access is enforced), boundary tests for exact length limits, and concurrency/resilience tests that simulate parallel creates to surface race conditions. Finally, add higher-level end-to-end and load tests (with seeded data) to verify real-world behavior under stress and to ensure observability/logging/metrics are emitted correctly.
 
 commit the code as task-3

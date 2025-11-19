@@ -141,7 +141,6 @@ public class MessageLogicTests
     [Fact]
     public async Task UpdateMessage_InactiveMessage_ReturnsConflict()
     {
-        // Arrange
         var organizationId = Guid.NewGuid();
         var id = Guid.NewGuid();
 
@@ -151,7 +150,7 @@ public class MessageLogicTests
             OrganizationId = organizationId,
             Title = "Old",
             Content = "old content",
-            IsActive = false, // inactive
+            IsActive = false, 
             CreatedAt = DateTime.UtcNow
         };
 
@@ -167,17 +166,9 @@ public class MessageLogicTests
 
         var result = await _logic.UpdateMessageAsync(organizationId, id, request);
 
-        
-        result.Should().Match<Result>(r => r is Conflict || r is ValidationError);
-
-        if (result is Conflict c)
-        {
-            c.Message.Should().Contain("inactive");
-        }
-        else if (result is ValidationError ve)
-        {
-            //ve.Errors.Should().ContainKey(nameof(request.Title)).OrContainKey(nameof(request.Content));
-        }
+        result.Should().BeOfType<Conflict>();
+        var conflict = result as Conflict;
+        conflict!.Message.Should().Contain("inactive");
 
         _repoMock.Verify(r => r.GetByIdAsync(organizationId, id), Times.Once);
         _repoMock.Verify(r => r.UpdateAsync(It.IsAny<Message>()), Times.Never);
