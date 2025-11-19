@@ -119,14 +119,29 @@ public class MessageLogic : IMessageLogic
             }
             list.Add(message);
         }
-
         if (string.IsNullOrWhiteSpace(request.Title))
+        {
             AddError(nameof(request.Title), "Title is required.");
-        else if (request.Title.Length > MaxTitleLength)
-            AddError(nameof(request.Title), $"Title must not exceed {MaxTitleLength} characters.");
+        }
+        else
+        {
+            if (request.Title.Length < 3)
+                AddError(nameof(request.Title), "Title must be at least 3 characters long.");
+            if (request.Title.Length > 200)
+                AddError(nameof(request.Title), "Title must not exceed 200 characters.");
+        }
 
-        if (request.Content != null && request.Content.Length > MaxContentLength)
-            AddError(nameof(request.Content), $"Content must not exceed {MaxContentLength} characters.");
+        if (string.IsNullOrWhiteSpace(request.Content))
+        {
+            AddError(nameof(request.Content), "Content is required.");
+        }
+        else
+        {
+            if (request.Content.Length < 10)
+                AddError(nameof(request.Content), "Content must be at least 10 characters long.");
+            if (request.Content.Length > 1000)
+                AddError(nameof(request.Content), "Content must not exceed 1000 characters.");
+        }
 
         return errors.ToDictionary(k => k.Key, k => k.Value.ToArray(), StringComparer.OrdinalIgnoreCase);
     }
