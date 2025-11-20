@@ -2,12 +2,7 @@
 using CodeChallenge.Api.Models;
 using CodeChallenge.Api.Repositories;
 using FluentAssertions;
-using Microsoft.VisualStudio.TestPlatform.CommunicationUtilities;
 using Moq;
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using Xunit;
 using Message = CodeChallenge.Api.Models.Message;
 
 namespace CodeChallenge.Tests;
@@ -139,7 +134,7 @@ public class MessageLogicTests
     }
 
     [Fact]
-    public async Task UpdateMessage_InactiveMessage_ReturnsConflict()
+    public async Task UpdateMessage_InactiveMessage_ReturnsValidationError()
     {
         var organizationId = Guid.NewGuid();
         var id = Guid.NewGuid();
@@ -150,7 +145,7 @@ public class MessageLogicTests
             OrganizationId = organizationId,
             Title = "Old",
             Content = "old content",
-            IsActive = false, 
+            IsActive = false,
             CreatedAt = DateTime.UtcNow
         };
 
@@ -166,9 +161,10 @@ public class MessageLogicTests
 
         var result = await _logic.UpdateMessageAsync(organizationId, id, request);
 
-        result.Should().BeOfType<Conflict>();
-        var conflict = result as Conflict;
-        conflict!.Message.Should().Contain("inactive");
+        result.Should().BeOfType<ValidationError>();
+        var ve = result as ValidationError;
+        ve!.Errors.Should().ContainKey("IsActive");
+        ve.Errors["IsActive"][0].Should().Contain("active");
 
         _repoMock.Verify(r => r.GetByIdAsync(organizationId, id), Times.Once);
         _repoMock.Verify(r => r.UpdateAsync(It.IsAny<Message>()), Times.Never);
@@ -186,6 +182,36 @@ public class MessageLogicTests
         var result = await _logic.DeleteMessageAsync(organizationId, id);
 
         result.Should().BeOfType<NotFound>();
+        _repoMock.Verify(r => r.GetByIdAsync(organizationId, id), Times.Once);
+        _repoMock.Verify(r => r.DeleteAsync(organizationId, id), Times.Never);
+    }
+
+    [Fact]
+    public async Task DeleteMessage_InactiveMessage_ReturnsValidationError()
+    {
+        var organizationId = Guid.NewGuid();
+        var id = Guid.NewGuid();
+
+        var existing = new Message
+        {
+            Id = id,
+            OrganizationId = organizationId,
+            Title = "Old",
+            Content = "old content",
+            IsActive = false,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        _repoMock.Setup(r => r.GetByIdAsync(organizationId, id))
+                 .ReturnsAsync(existing);
+
+        var result = await _logic.DeleteMessageAsync(organizationId, id);
+
+        result.Should().BeOfType<ValidationError>();
+        var ve = result as ValidationError;
+        ve!.Errors.Should().ContainKey("IsActive");
+        ve.Errors["IsActive"][0].Should().Contain("deleted");
+
         _repoMock.Verify(r => r.GetByIdAsync(organizationId, id), Times.Once);
         _repoMock.Verify(r => r.DeleteAsync(organizationId, id), Times.Never);
     }

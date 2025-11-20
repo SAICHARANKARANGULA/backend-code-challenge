@@ -57,7 +57,12 @@ public class MessageLogic : IMessageLogic
             return new NotFound($"Message with id '{id}' not found for organization '{organizationId}'.");
 
         if (!existing.IsActive)
-            return new Conflict("Cannot update an inactive message.");
+        {
+            return new ValidationError(new Dictionary<string, string[]>
+        {
+            { "IsActive", new[] { "Message must be active in order to be updated." } }
+        });
+        }
 
         if (!string.Equals(existing.Title, request.Title, StringComparison.OrdinalIgnoreCase))
         {
